@@ -25,218 +25,740 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
+
+
+
+
+# Tratamiento de Datos
+import pandas as pd
+import numpy as np
+from IPython.display import display
+
+# Visualizaciones
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Para que se muestren todas las columnas al imspeccionar los DataFrames
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', 2000)
+pd.set_option('display.expand_frame_repr', False)
+pd.set_option('display.max_columns',None)
+
+
 # ============================================================================
 # 0. PRE-EDA
 # ============================================================================
 
-def pre_eda_calidad(df, col_pedido='order_id', col_cliente='id_cliente'):
-    """Nulos por columna + verificación de que las claves hacen lo que deben:
-    col_pedido único (una fila = un pedido), col_cliente repetido (normal)."""
 
-    nulos = df.isnull().sum()
-    nulos = nulos[nulos > 0]
+def analisis_rapido(df, n=5):
+    """Función que proporciona un analisis rápido del dataframe.
+    parámetros:
+    df : Dataframe
+    n : numero de filas (por defecto 5)   
+    """
+    print(f"Las {n} primeras columnas son:\n {df.head(n).T}")
+    print(":" * 100)
+    print(f"La informacion basica es:")
+    df.info()
+    print(":" * 100)
+    print(f"El número de duplicados es: {df.duplicated().sum()}")
+    print(":" * 100)
+    print(f"El procentaje de nulos es:\n{df.isna().mean().round(4)*100} ")
 
-    fig, ax = plt.subplots(figsize=(6, 3.2))
-    if len(nulos) > 0:
-        ax.bar(nulos.index, nulos.values)
-    ax.set_title('Valores nulos por columna')
-    ax.set_ylabel('nº de filas nulas')
-    plt.xticks(rotation=20)
-    plt.tight_layout()
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+def eda(df, n=2, cols_excluir=None):
+    """
+    Funcion que proporciona un EDA rapido.
+    
+    Parameters
+    ----------
+    df : DataFrame
+        DataFrame que queremos analizar.
+        
+    n : int
+        Numero de decimales para las estadisticas numericas.
+        
+    cols_excluir : list
+        Lista de columnas que no queremos analizar.
+    """
+
+    # Si no indicamos columnas a excluir,
+    # creamos una lista vacia
+    if cols_excluir is None:
+        cols_excluir = []
+
+    # Creamos un DataFrame sin las columnas excluidas
+    df_eda = df.drop(columns=cols_excluir, errors="ignore")
+
+    # Identificamos los tipos de columnas
+    num_cols = df_eda.select_dtypes(include="number").columns
+
+    cat_cols = df_eda.select_dtypes(
+        include=["string", "category", "object"]
+    ).columns
+
+    date_cols = df_eda.select_dtypes(
+        include=["datetime", "datetimetz"]
+    ).columns
+
+    # Mostramos las columnas encontradas
+    print("Variables numéricas:\n\n", num_cols)
+
+    print("\nVariables categóricas:\n\n", cat_cols)
+
+    print("\nVariables datetime:\n\n", date_cols)
+
+    # --------------------------------------------------
+    # ESTADISTICAS BASICAS
+    # --------------------------------------------------
+
+    print("\n========== ESTADÍSTICAS BÁSICAS ==========\n")
+
+    # Variables numericas
+    if len(num_cols) > 0:
+
+        print("Variables numéricas:")
+
+        print(
+            df_eda[num_cols]
+            .describe()
+            .T
+            .round(n)
+        )
+
+    # Variables categoricas
+    if len(cat_cols) > 0:
+
+        print("\nVariables categóricas:")
+
+        print(
+            df_eda[cat_cols]
+            .describe()
+            .T
+        )
+
+    # Variables datetime
+    if len(date_cols) > 0:
+
+        print("\nVariables datetime:")
+
+        print(
+            df_eda[date_cols]
+            .describe()
+            .T
+        )
+
+    # --------------------------------------------------
+    # ANALISIS DE VARIABLES CATEGORICAS
+    # --------------------------------------------------
+
+    for col in cat_cols:
+
+        print(
+            f"\n----------- ESTAMOS ANALIZANDO: '{col}' ----------\n"
+        )
+
+        print("Valores únicos:")
+
+        print(
+            df_eda[col].unique()
+        )
+
+        print("\nFrecuencia de los valores:")
+
+        print(
+            df_eda[col].value_counts()
+        )
+
+    # --------------------------------------------------
+    # COUNTPLOT
+    # --------------------------------------------------
+
+    print("\nRepresentación de Countplot:\n")
+
+    for col in cat_cols:
+
+        # Si tiene demasiadas categorias,
+        # no hacemos el grafico
+        if df_eda[col].nunique() > 200:
+
+            print(
+                f"Columna {col} tiene demasiadas "
+                f"categorias: {df_eda[col].nunique()}\n"
+            )
+
+            continue
+
+        # Numero de categorias
+        num_categorias = df_eda[col].nunique()
+
+        # Calculamos el ancho del grafico
+        width = max(7, num_categorias * 0.5)
+
+        height = 3
+
+        plt.figure(figsize=(width, height))
+
+        sns.countplot(
+            x=df_eda[col],
+            order=df_eda[col].value_counts().index
+        )
+
+        plt.title(f"Gráfico de barras de {col}")
+
+        plt.xlabel(col)
+
+        plt.ylabel("Frecuencia")
+
+        plt.xticks(rotation=90)
+
+        plt.show()
+
+    # --------------------------------------------------
+    # HISTOGRAMAS
+    # --------------------------------------------------
+
+    print("\nRepresentación de Histplot:\n")
+
+    for col in num_cols:
+
+        plt.figure(figsize=(10, 4))
+
+        sns.histplot(
+            df_eda[col],
+            bins=30,
+            edgecolor="black"
+        )
+
+        plt.title(f"Distribución de {col}")
+
+        plt.xlabel(col)
+
+        plt.ylabel("Frecuencia")
+
+        plt.show()
+
+    # --------------------------------------------------
+    # BOXPLOTS
+    # --------------------------------------------------
+
+    print("\nRepresentación de Boxplot:\n")
+
+    for col in num_cols:
+
+        plt.figure(figsize=(10, 2))
+
+        sns.boxplot(
+            x=df_eda[col]
+        )
+
+        plt.title(f"Distribución de {col}")
+
+        plt.xlabel(col)
+
+        plt.show()
+
+def matriz_correlación(df):
+    """ Función que representa la matriz de correlacion
+    con un hearmap"""
+
+    # Calcular la matriz de correlación
+    corr_matrix = df.corr(numeric_only=True)
+
+    # Crear la figura
+    plt.figure(figsize=corr_matrix.shape)
+
+    # Crear una máscara para mostrar solo la parte triangular
+    mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
+
+    # Graficar el mapa de calor
+    sns.heatmap(corr_matrix,
+                annot=True,
+                vmin=-1,
+                vmax=1,
+                mask=mask,
+                cmap='cool')
     plt.show()
 
-    print(f'Columnas con nulos: {len(nulos)} de {df.shape[1]}')
-    print(nulos if len(nulos) else '(ninguna)')
-
-    dup_pedido = df[col_pedido].duplicated().sum()
-    dup_cliente = df[col_cliente].duplicated().sum()
-    n_clientes = df[col_cliente].nunique()
-
-    print(f'\n{col_pedido} duplicados: {dup_pedido}  (esperado: 0)')
-    print(f'{col_cliente} duplicados: {dup_cliente}  (>0 es normal: varios pedidos por cliente)')
-    print(f'{col_cliente} únicos: {n_clientes}')
-
-    if dup_pedido > 0:
-        print(f'⚠️  {col_pedido} tiene duplicados: revisa si hay pedidos repetidos por error.')
-
-# ============================================================================
-# 1. DETECTAR COLUMNAS UTILES 
-# ============================================================================
-
-
-def cols_categoricas_validas(df, max_categorias=15, min_categorias=2, excluir=None):
-    """Detecta columnas categóricas 'reales': dtype object/category,
-    con cardinalidad manejable (ni IDs con miles de valores únicos,
-    ni columnas constantes con 1 solo valor)."""
-    print("COLUMNAS CATEGORICA VALIDAS")
-    print("="*50)
-
-    excluir = set(excluir or [])
-    candidatas = df.select_dtypes(include=['object', 'category']).columns
-
-    return [
-        c for c in candidatas
-        if c not in excluir and min_categorias <= df[c].nunique() <= max_categorias
-    ]
-
-    print(f"las columnas categoricas validas son: {cols_numericas_validas}")
-
-def cols_numericas_validas(df, min_categorias=5, excluir=None):
-    """Detecta columnas numéricas 'reales': dtype numérico, descartando
-    aquellas con muy pocos valores únicos (suelen ser categorías codificadas
-    como número, ej. año_ventas, flags 0/1)."""
-
-    print("COLUMNAS NUMERICAS VALIDAS")
-    print("="*50)
-    
-    excluir = set(excluir or [])
-    candidatas = df.select_dtypes(include='number').columns
-
-    return [
-        c for c in candidatas
-        if c not in excluir and df[c].nunique() >= min_categorias
-    ]
-
+    # ============================================================================
+    #                ANALISIS ESPECIFICOS CON VUSIALIZACIONES
+    # ============================================================================
 
 # ============================================================================
 # 1. UNIVARIANTE — una variable
 # ============================================================================
 
-def univariante_categorico(dataframe, lista_cols=None, excluir=None, ncols=3):
 
-    if lista_cols is None:
-        lista_cols = cols_categoricas_validas(dataframe, excluir=excluir)
+def univariante_categorico(dataframe, lista_cols, ncols=3):
+    """
+    Representa la distribución de las variables categóricas
+    que indiquemos en lista_cols.
 
+    Los gráficos se organizan en 3 columnas por fila.
+    """
+
+    # Número de gráficos
     num_graph = len(lista_cols)
+
+    # Número de filas necesarias
     num_rows = (num_graph + ncols - 1) // ncols
 
-    fig, axes = plt.subplots(num_rows, ncols, figsize=(6*ncols, num_rows*4))
+    # Creamos los subplots
+    fig, axes = plt.subplots(
+        num_rows,
+        ncols,
+        figsize=(6 * ncols, 4 * num_rows)
+    )
+
+    # Convertimos axes en una lista
     axes = axes.flatten()
 
+    # Creamos un gráfico para cada columna
     for i, col in enumerate(lista_cols):
-        order = dataframe[col].value_counts().index
-        sns.countplot(data=dataframe, x=col, order=order, ax=axes[i])
-        axes[i].set_title(f'Distribución de {col}')
-        axes[i].tick_params(axis='x', rotation=30)
 
-    for j in range(i+1, len(axes)):
+        # Ordenamos las categorías por frecuencia
+        order = dataframe[col].value_counts().index
+
+        sns.countplot(
+            data=dataframe,
+            x=col,
+            order=order,
+            ax=axes[i]
+        )
+
+        axes[i].set_title(
+            f"Distribución de {col}"
+        )
+
+        axes[i].set_xlabel(col)
+
+        axes[i].set_ylabel("Frecuencia")
+
+        axes[i].tick_params(
+            axis="x",
+            rotation=30
+        )
+
+    # Eliminamos los espacios que sobren
+    for j in range(num_graph, len(axes)):
         fig.delaxes(axes[j])
 
     plt.tight_layout()
     plt.show()
 
-def univariante_numerico(dataframe, lista_cols=None, excluir=None):
 
-    if lista_cols is None:
-        lista_cols = cols_numericas_validas(dataframe, excluir=excluir)
+def univariante_numerico(dataframe, lista_cols, ncols=3):
+    """
+    Representa la distribución de las variables numéricas
+    que indiquemos en lista_cols.
 
+    Se crean dos bloques:
+    - Histogramas
+    - Boxplots
+
+    Los gráficos se organizan en 3 columnas por fila.
+    """
+
+    # Número de gráficos
     num_graph = len(lista_cols)
-    fig, axes = plt.subplots(num_graph, 2, figsize=(15, num_graph*5))
+
+    # Número de filas necesarias
+    num_rows = (num_graph + ncols - 1) // ncols
+
+    # ==========================================
+    # HISTOGRAMAS
+    # ==========================================
+
+    fig, axes = plt.subplots(
+        num_rows,
+        ncols,
+        figsize=(6 * ncols, 4 * num_rows)
+    )
+
+    axes = axes.flatten()
 
     for i, col in enumerate(lista_cols):
 
-        sns.histplot(data=dataframe, x=col, ax=axes[i,0], bins=200)
-        axes[i,0].set_title(f'Distribución de {col}')
-        axes[i,0].set_xlabel(col)
-        axes[i,0].set_ylabel('Frecuencia')
+        sns.histplot(
+            data=dataframe,
+            x=col,
+            ax=axes[i],
+            bins=30
+        )
 
-        sns.boxplot(data=dataframe, x=col, ax=axes[i,1])
-        axes[i,1].set_title(f'Boxplot de {col}')
+        axes[i].set_title(
+            f"Distribución de {col}"
+        )
+
+        axes[i].set_xlabel(col)
+
+        axes[i].set_ylabel("Frecuencia")
+
+    # Eliminamos los espacios que sobren
+    for j in range(num_graph, len(axes)):
+        fig.delaxes(axes[j])
+
+    plt.tight_layout()
+    plt.show()
+
+    # ==========================================
+    # BOXPLOTS
+    # ==========================================
+
+    fig, axes = plt.subplots(
+        num_rows,
+        ncols,
+        figsize=(6 * ncols, 3 * num_rows)
+    )
+
+    axes = axes.flatten()
+
+    for i, col in enumerate(lista_cols):
+
+        sns.boxplot(
+            data=dataframe,
+            x=col,
+            ax=axes[i]
+        )
+
+        axes[i].set_title(
+            f"Boxplot de {col}"
+        )
+
+        axes[i].set_xlabel(col)
+
+    # Eliminamos los espacios que sobren
+    for j in range(num_graph, len(axes)):
+        fig.delaxes(axes[j])
 
     plt.tight_layout()
     plt.show()
 
 
-def resumen_numerico(dataframe, lista_cols=None, excluir=None):
-
-    if lista_cols is None:
-        lista_cols = cols_numericas_validas(dataframe, excluir=excluir)
-
-    resumen = {}
-    for col in lista_cols:
-        q1, q3 = dataframe[col].quantile([0.25, 0.75])
-        iqr = q3 - q1
-        lo, hi = q1 - 1.5*iqr, q3 + 1.5*iqr
-        n_out = ((dataframe[col] < lo) | (dataframe[col] > hi)).sum()
-
-        resumen[col] = {
-            'media': dataframe[col].mean(),
-            'mediana': dataframe[col].median(),
-            'outliers_pct': round(n_out / len(dataframe) * 100, 2),
-            'skew': round(dataframe[col].skew(), 2),
-        }
-
-    return pd.DataFrame(resumen).T
 
 # ============================================================================
 # 2. BIVARIANTE — dos variables
 # ============================================================================
 
-def bivariante_num_num(df, col_x, col_y, alpha=0.35):
-    """scatterplot + correlación de Pearson entre dos variables numéricas."""
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-    fig, ax = plt.subplots(figsize=(6, 4.2))
-    sns.scatterplot(data=df, x=col_x, y=col_y, alpha=alpha, ax=ax)
-    ax.set_title(f'{col_x} vs {col_y}')
+
+def bivariante_num_num(df, col_x, col_y, alpha=0.35):
+    """
+    Scatterplot + correlación de Pearson
+    entre dos variables numéricas.
+    """
+
+    # ==========================================
+    # SCATTERPLOT
+    # ==========================================
+
+    fig, ax = plt.subplots(
+        figsize=(6, 4.2)
+    )
+
+    sns.scatterplot(
+        data=df,
+        x=col_x,
+        y=col_y,
+        alpha=alpha,
+        ax=ax
+    )
+
+    ax.set_title(
+        f"{col_x} vs {col_y}"
+    )
+
+    ax.set_xlabel(col_x)
+    ax.set_ylabel(col_y)
+
     plt.tight_layout()
     plt.show()
 
-    r = df[col_x].corr(df[col_y])
-    print(f'Correlación (Pearson) {col_x} vs {col_y}: r = {r:.4f}')
+    # ==========================================
+    # CORRELACIÓN DE PEARSON
+    # ==========================================
+
+    # Eliminamos filas que tengan NaN
+    # en alguna de las dos columnas
+    datos = df[[col_x, col_y]].dropna()
+
+    # Calculamos la correlación
+    r = datos[col_x].corr(
+        datos[col_y]
+    )
+
+    print(
+        f"Correlación (Pearson) "
+        f"{col_x} vs {col_y}: r = {r:.4f}"
+    )
+
     return r
 
+# ==========================================
+# BARPLOT
+# ==========================================
+def bivariante_cat_num(
+    df,
+    col_control,
+    lista_metricas,
+    ci=95
+):
+    """
+    Barplot de la media de una variable numérica
+    según una variable categórica.
 
-def bivariante_cat_num(df, col_control, lista_metricas, ci=95, figsize=None):
-    """barplot (media + IC) en subplots: una métrica numérica según cada
-    variable categórica de col_control (puede ser una sola columna o lista)."""
+    Se pueden indicar:
 
+    - Una o varias variables categóricas.
+    - Una o varias métricas numéricas.
+
+    Los gráficos se organizan en
+    3 columnas por fila.
+    """
+
+    # ==========================================
+    # PREPARAMOS LAS VARIABLES
+    # ==========================================
+
+    # Si solo pasamos una columna como texto,
+    # la convertimos en una lista
     if isinstance(col_control, str):
+
         col_control = [col_control]
 
-    n = len(col_control) * len(lista_metricas)
-    figsize = figsize or (5.5 * n, 4)
-    fig, axes = plt.subplots(1, n, figsize=figsize)
-    if n == 1:
-        axes = [axes]
+    # Número total de gráficos
+    num_graph = (
+        len(col_control)
+        * len(lista_metricas)
+    )
 
-    idx = 0
+    # Número de columnas por fila
+    ncols = 3
+
+    # Número de filas necesarias
+    num_rows = (
+        num_graph + ncols - 1
+    ) // ncols
+
+    # ==========================================
+    # CREAMOS LOS SUBPLOTS
+    # ==========================================
+
+    fig, axes = plt.subplots(
+        num_rows,
+        ncols,
+        figsize=(
+            6 * ncols,
+            4 * num_rows
+        )
+    )
+
+    # Convertimos axes en una lista
+    axes = axes.flatten()
+
+    # Diccionario donde guardaremos
+    # las medias
     medias = {}
+
+    # Contador de gráficos
+    idx = 0
+
+    # ==========================================
+    # CREAMOS LOS GRAFICOS
+    # ==========================================
+
     for metrica in lista_metricas:
+
         for col in col_control:
-            sns.barplot(data=df, x=col, y=metrica, ax=axes[idx], errorbar=('ci', ci))
-            axes[idx].set_title(f'{metrica} medio por {col}')
-            axes[idx].tick_params(axis='x', rotation=20)
-            medias[(metrica, col)] = df.groupby(col)[metrica].mean().round(2).sort_values(ascending=False)
+
+            sns.barplot(
+                data=df,
+                x=col,
+                y=metrica,
+                ax=axes[idx],
+                errorbar=("ci", ci)
+            )
+
+            axes[idx].set_title(
+                f"{metrica} medio por {col}"
+            )
+
+            axes[idx].set_xlabel(col)
+
+            axes[idx].set_ylabel(
+                f"Media de {metrica}"
+            )
+
+            axes[idx].tick_params(
+                axis="x",
+                rotation=20
+            )
+
+            # ==================================
+            # CALCULAMOS LAS MEDIAS
+            # ==================================
+
+            medias[(metrica, col)] = (
+                df.groupby(col)[metrica]
+                .mean()
+                .round(2)
+                .sort_values(
+                    ascending=False
+                )
+            )
+
             idx += 1
+
+    # ==========================================
+    # ELIMINAMOS ESPACIOS SOBRANTES
+    # ==========================================
+
+    for j in range(
+        num_graph,
+        len(axes)
+    ):
+
+        fig.delaxes(axes[j])
 
     plt.tight_layout()
     plt.show()
 
+    # ==========================================
+    # MOSTRAMOS LAS MEDIAS
+    # ==========================================
+
     for (metrica, col), serie in medias.items():
-        print(f'{metrica} medio por {col}:')
+
+        print(
+            f"{metrica} medio por {col}:"
+        )
+
         print(serie)
+
         print()
 
     return medias
 
+# ==========================================
+# LINEPLOT
+# ==========================================
+def bivariante_temporal(
+    df,
+    col_fecha,
+    col_metrica,
+    freq="ME",
+    agg="sum"
+):
+    """
+    Lineplot de una métrica agregada a lo largo del tiempo.
 
-def bivariante_temporal(df, col_fecha, col_metrica, freq='ME', agg='sum'):
-    """lineplot de col_metrica resampleada en el tiempo (por defecto, suma
-    mensual). freq sigue la notación de pandas ('ME'=mes, 'W'=semana, ...)."""
+    freq:
+        "ME" = mensual
+        "W"  = semanal
+        "D"  = diario
+        "YE" = anual
+        etc.
 
-    serie = df.set_index(col_fecha).resample(freq)[col_metrica].agg(agg)
+    agg:
+        "sum"  = suma
+        "mean" = media
+        "count" = número de registros
+        etc.
+    """
 
-    fig, ax = plt.subplots(figsize=(8, 3.3))
-    serie.plot(ax=ax)
-    ax.set_title(f'Evolución de {col_metrica} ({agg}, freq={freq})')
+    # ==========================================
+    # PREPARAMOS LOS DATOS
+    # ==========================================
+
+    # Nos quedamos con fecha y métrica
+    datos = df[[col_fecha, col_metrica]].dropna()
+
+    # Nos aseguramos de que la fecha
+    # tenga formato datetime
+    datos[col_fecha] = pd.to_datetime(
+        datos[col_fecha]
+    )
+
+    # Ponemos la fecha como índice
+    datos = datos.set_index(col_fecha)
+
+    # Agregamos la métrica según la frecuencia
+    serie = (
+        datos[col_metrica]
+        .resample(freq)
+        .agg(agg)
+    )
+
+    # Convertimos la serie en DataFrame
+    # para utilizar seaborn
+    datos_grafico = serie.reset_index()
+
+    # ==========================================
+    # LINEPLOT
+    # ==========================================
+
+    fig, ax = plt.subplots(
+        figsize=(10, 4)
+    )
+
+    sns.lineplot(
+        data=datos_grafico,
+        x=col_fecha,
+        y=col_metrica,
+        ax=ax
+    )
+
+    ax.set_title(
+        f"Evolución de {col_metrica} "
+        f"({agg}, freq={freq})"
+    )
+
+    ax.set_xlabel("Fecha")
+
+    ax.set_ylabel(col_metrica)
+
+    plt.xticks(rotation=30)
+
     plt.tight_layout()
     plt.show()
 
-    media, std = serie.mean(), serie.std()
-    cv = std / media * 100 if media else float('nan')
-    print(f'Media: {media:.2f}   Std: {std:.2f}   CV: {cv:.2f}%')
-    print(f'Mínimo: {serie.idxmin()} -> {serie.min():.2f}')
-    print(f'Máximo: {serie.idxmax()} -> {serie.max():.2f}')
+    # ==========================================
+    # ESTADÍSTICAS
+    # ==========================================
+
+    media = serie.mean()
+
+    std = serie.std()
+
+    # Coeficiente de variación
+    cv = (
+        std / media * 100
+        if media != 0
+        else float("nan")
+    )
+
+    print(
+        f"Media: {media:.2f}   "
+        f"Std: {std:.2f}   "
+        f"CV: {cv:.2f}%"
+    )
+
+    print(
+        f"Mínimo: {serie.idxmin()} "
+        f"-> {serie.min():.2f}"
+    )
+
+    print(
+        f"Máximo: {serie.idxmax()} "
+        f"-> {serie.max():.2f}"
+    )
+
     return serie
 
 
@@ -262,44 +784,3 @@ def eda_global_heatmap(df, lista_cols_num, top_n=8):
     return corr
 
 
-# ============================================================================
-# EJEMPLO DE USO — con tu proyecto (02_datos_limpios.csv)
-# ============================================================================
-
-if __name__ == '__main__':
-
-    df = pd.read_csv('02_datos_limpios.csv')
-    df['fecha_pedido'] = pd.to_datetime(df['fecha_pedido'])
-
-    clientes = df.groupby('id_cliente').agg(
-        n_pedidos=('order_id', 'count'),
-        gasto_total=('importe_total', 'sum'),
-        edad=('edad', 'first'),
-        ciudad=('ciudad', 'first'),
-        segmento_cliente=('segmento_cliente', 'first'),
-        ingresos_anuales=('ingresos_anuales', 'first'),
-    ).reset_index()
-
-    print('#### 1. PRE-EDA ####')
-    pre_eda_calidad(df)
-
-    print('\n#### 2. UNIVARIANTE CATEGÓRICO ####')
-    univariante_categorico(df, ['segmento_cliente', 'canal', 'categoria_producto'])
-
-    print('\n#### 3. UNIVARIANTE NUMÉRICO ####')
-    univariante_numerico(df, ['importe_total', 'edad', 'ingresos_anuales'])
-
-    print('\n#### 4. BIVARIANTE NUM-NUM ####')
-    bivariante_num_num(clientes, 'ingresos_anuales', 'gasto_total')
-
-    print('\n#### 5. BIVARIANTE CAT-NUM ####')
-    bivariante_cat_num(df, ['canal', 'segmento_cliente'], ['importe_total'])
-
-    print('\n#### 6. BIVARIANTE TEMPORAL ####')
-    bivariante_temporal(df, 'fecha_pedido', 'importe_total')
-
-    print('\n#### 7. GLOBAL — HEATMAP ####')
-    num_cols = ['importe_total', 'cantidad', 'precio_unitario', 'descuento', 'calificacion',
-                'costo_unitario', 'precio_lista', 'peso_kg', 'stock_disponible',
-                'rating_promedio_producto', 'edad', 'ingresos_anuales', 'visitas_web_mes']
-    eda_global_heatmap(df, num_cols)

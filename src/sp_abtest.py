@@ -285,3 +285,84 @@ if __name__ == '__main__':
     chi_cuadrado_independencia(df, 'segmento_cliente', 'devuelto')
     chi_cuadrado_independencia(clientes, 'nivel_educativo', 'segmento_cliente')
     correlacion_regresion(clientes, 'ingresos_anuales', 'gasto_total')
+
+
+
+import pandas as pd
+import scipy.stats as stats
+
+
+def exploracion_df_abtest2(df, col_control):
+
+    for categoria in df[col_control].unique():
+        df_filtrado = df[df[col_control] == categoria]
+
+        print(
+            f'Los principales estadísticos de las columnas '
+            f'categóricas para el grupo {categoria.upper()} son'
+        )
+        display(df_filtrado.describe(include='str').T)
+
+        print(
+            f'Los principales estadísticos de las columnas '
+            f'numéricas para el grupo {categoria.upper()} son'
+        )
+        display(df_filtrado.describe(include='number').T)
+
+        print('=' * 100)
+
+
+def normalidad2(df, lista_metricas):
+
+    for metrica in lista_metricas:
+
+        statistic, pvalue = stats.shapiro(df[metrica])
+
+        if pvalue > 0.05:
+            print(
+                f'Para la columna {metrica.upper()} '
+                f'los datos SÍ siguen una distribución normal'
+            )
+        else:
+            print(
+                f'Para la columna {metrica.upper()} '
+                f'los datos NO siguen una distribución normal'
+            )
+
+def homocedasticidad2(df,col_control,lista_metricas):
+    for metrica in lista_metricas:
+        df_grupos=[]
+
+        for valor in df[col_control].unique():
+            df_grupos.append(df[df[col_control] == valor][metrica])
+
+        statistic,pvalue = stats.levene(*df_grupos)
+
+        if pvalue > 0.05:
+                print(
+                        f'Para la columna {metrica.upper()} las varianzas SÍ son homgéneas entre grupos, SI hay HOMOCEDASTICIDAD'
+                    )
+        else:
+                    print(
+                        f'Para la columna {metrica.upper()} las varianzas NO son homgéneas entre grupos, NO hay HOMOCEDASTICIDAD'
+                    ) 
+
+def mannwhitneyu2 (df, col_control, lista_metricas):
+
+    for metrica in lista_metricas:
+
+        valores_control = df[col_control].unique()
+
+        control  = df[df[col_control] == valores_control[0]][metrica]
+        test  = df[df[col_control] == valores_control[1]][metrica]
+
+        statistic, pvalue = stats.mannwhitneyu(control,test)
+
+        if pvalue > 0.05:
+            print(f'Para la métrica {metrica.upper()}, las medianas SI son iguales, es decir, NO hay deferencias significativas entre grupos')
+
+        else:
+            print(f'Para la métrica {metrica.upper()}, las medianas NO son iguales, es decir, SI hay deferencias significativas entre grupos')
+
+
+
