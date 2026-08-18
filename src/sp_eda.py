@@ -20,15 +20,6 @@ Todas asumen que le pasas el DataFrame ya al nivel correcto
 Repasa la Guía de claves de Fase 3 antes de decidir qué tabla usar.
 """
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-
-
-
-
-
 # Tratamiento de Datos
 import pandas as pd
 import numpy as np
@@ -49,25 +40,34 @@ pd.set_option('display.max_columns',None)
 # 0. PRE-EDA
 # ============================================================================
 
+# EXPLORACION BASICA
+def exploracion(df):
 
-def analisis_rapido(df, n=5):
-    """Función que proporciona un analisis rápido del dataframe.
-    parámetros:
-    df : Dataframe
-    n : numero de filas (por defecto 5)   
-    """
-    print(f"Las {n} primeras columnas son:\n {df.head(n).T}")
-    print(":" * 100)
-    print(f"La informacion basica es:")
-    df.info()
-    print(":" * 100)
-    print(f"El número de duplicados es: {df.duplicated().sum()}")
-    print(":" * 100)
-    print(f"El procentaje de nulos es:\n{df.isna().mean().round(4)*100} ")
+    print('Primeras filas')
+    display(df.head())
+
+    print('Información')
+    display(df.info())
+
+    print('Estadísticos')
+    display(df.describe())
+
+    print('Tamaño')
+    print(df.shape)
+
+    print('Nulos')
+    display(df.isnull().sum())
 
 
-import matplotlib.pyplot as plt
-import seaborn as sns
+# COMPROBAR CLAVES
+def comprobar_claves(df, valores_claves):
+
+    for clave in valores_claves:
+        print('Valores claves:')
+        print(f'{clave}: {df[clave].duplicated().sum()} duplicados')
+        print(f'{clave}: {df[clave].nunique()} unicos')
+        print('=' * 100)
+
 
 
 def eda(df, n=2, cols_excluir=None):
@@ -96,20 +96,20 @@ def eda(df, n=2, cols_excluir=None):
 
     # Identificamos los tipos de columnas
     num_cols = df_eda.select_dtypes(include="number").columns
-
+    
     cat_cols = df_eda.select_dtypes(
         include=["string", "category", "object"]
     ).columns
-
+    
     date_cols = df_eda.select_dtypes(
         include=["datetime", "datetimetz"]
     ).columns
 
     # Mostramos las columnas encontradas
     print("Variables numéricas:\n\n", num_cols)
-
+    print('=' * 100)
     print("\nVariables categóricas:\n\n", cat_cols)
-
+    print('=' * 100)
     print("\nVariables datetime:\n\n", date_cols)
 
     # --------------------------------------------------
@@ -155,6 +155,9 @@ def eda(df, n=2, cols_excluir=None):
     # --------------------------------------------------
     # ANALISIS DE VARIABLES CATEGORICAS
     # --------------------------------------------------
+        print(
+            f"\n----------- ANALISIS DE VARIABLES CATEGORICAS----------\n"
+        )
 
     for col in cat_cols:
 
@@ -180,7 +183,7 @@ def eda(df, n=2, cols_excluir=None):
 
     print("\nRepresentación de Countplot:\n")
 
-    for col in cat_cols:
+    for col in cols_cat:
 
         # Si tiene demasiadas categorias,
         # no hacemos el grafico
@@ -193,30 +196,47 @@ def eda(df, n=2, cols_excluir=None):
 
             continue
 
-        # Numero de categorias
-        num_categorias = df_eda[col].nunique()
+        cols_cat = df.select_dtypes(
+            include=['string', 'object', 'category']
+        ).columns
 
-        # Calculamos el ancho del grafico
-        width = max(7, num_categorias * 0.5)
+        n = len(cols_cat)
+        ncols = 2
+        nrows = (n + ncols - 1) // ncols
 
-        height = 3
-
-        plt.figure(figsize=(width, height))
-
-        sns.countplot(
-            x=df_eda[col],
-            order=df_eda[col].value_counts().index
+        fig, axes = plt.subplots(
+            nrows,
+            ncols,
+            figsize=(8 * ncols, 5 * nrows)
         )
 
-        plt.title(f"Gráfico de barras de {col}")
+        axes = axes.flatten()
 
-        plt.xlabel(col)
+        for ax, col in zip(axes, cols_cat):
 
-        plt.ylabel("Frecuencia")
+            if df[col].nunique() > 200:
+                print(
+                    f"Columna {col} tiene demasiados valores únicos: "
+                    f"{df[col].nunique()}"
+                )
+                ax.set_visible(False)
+                continue
 
-        plt.xticks(rotation=90)
+            sns.countplot(
+                x=df[col],
+                order=df[col].value_counts().index,
+                ax=ax
+            )
 
-        plt.show()
+            ax.set_title(f"Distribución de {col}")
+            ax.tick_params(axis='x', rotation=90)
+
+        for ax in axes[n:]:
+            ax.set_visible(False)
+
+        plt.tight_layout()
+        plt.show()        
+            
 
     # --------------------------------------------------
     # HISTOGRAMAS
@@ -284,9 +304,9 @@ def matriz_correlación(df):
                 cmap='cool')
     plt.show()
 
-    # ============================================================================
-    #                ANALISIS ESPECIFICOS CON VUSIALIZACIONES
-    # ============================================================================
+# ============================================================================
+#                ANALISIS ESPECIFICOS CON VUSIALIZACIONES
+# ============================================================================
 
 # ============================================================================
 # 1. UNIVARIANTE — una variable
