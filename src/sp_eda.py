@@ -405,7 +405,7 @@ def matriz_correlacion(df, lista_cols_num=None, cols_excluir=None, top_n=10):
 # 1. UNIVARIANTE — una variable
 # ============================================================================
 
-def univariante_categorico(df, col):
+def countplot(df, col):
     """
     Distribución de una variable categórica.
     Dibuja un countplot ordenado por frecuencia.
@@ -417,35 +417,84 @@ def univariante_categorico(df, col):
     plt.xlabel(col)
     plt.ylabel("Frecuencia")
     plt.xticks(rotation=30)
+
+    plt.tight_layout()
     plt.show()
 
     print(df[col].value_counts())
 
 
-def univariante_numerico(df, col, bins=30):
+def histplot(df, col, bins=30):
     """
     Distribución de una variable numérica.
-    Dibuja un histograma y un boxplot.
+    Dibuja un histograma.
     """
     sns.histplot(data=df, x=col, bins=bins)
     plt.title(f"Distribución de {col}")
     plt.xlabel(col)
     plt.ylabel("Frecuencia")
-    plt.show()
 
-    sns.boxplot(data=df, x=col)
-    plt.title(f"Boxplot de {col}")
-    plt.xlabel(col)
+    plt.tight_layout()
     plt.show()
 
     print(df[col].describe().round(2))
+
+def boxplot(df, col, bins=30):
+    """
+    Distribución de una variable numérica.
+    Dibuja un boxplot.
+    """
+    sns.boxplot(data=df, x=col)
+    plt.title(f"Boxplot de {col}")
+    plt.xlabel(col)
+
+    plt.tight_layout()
+    plt.show()
+
+    print(df[col].describe().round(2))
+
+def detectar_outliers(df): #OJO ESTARA EN SP LIMPIEZA
+    # 1. Detectar qué columnas numéricas tienen outliers, mostrando el detalle
+    columnas_con_outliers = []
+
+    for columna in df.select_dtypes(include='number').columns:
+        Q1 = df[columna].quantile(0.25)
+        Q3 = df[columna].quantile(0.75)
+        IQR = Q3 - Q1
+
+        limite_inferior = Q1 - 1.5 * IQR
+        limite_superior = Q3 + 1.5 * IQR
+
+        outliers = df[
+            (df[columna] < limite_inferior) |
+            (df[columna] > limite_superior)
+        ]
+        n_outliers = len(outliers)
+
+        if n_outliers > 0:
+            print(f"Columna: {columna}")
+            print(f"Q1: {Q1:.3f}")
+            print(f"Q3: {Q3:.3f}")
+            print(f"IQR: {IQR:.3f}")
+            print(f"Límite inferior: {limite_inferior:.3f}")
+            print(f"Límite superior: {limite_superior:.3f}")
+            print(f"Outliers encontrados: {n_outliers}")
+            print(f"El porcentaje de Outliers en {columna} es: {n_outliers/df.shape[0]*100:.3f} %")
+            print(f"\nDescribe de los outliers en {columna}:")
+            print(outliers[columna].describe().round(3))
+            print("-" * 50)
+            columnas_con_outliers.append(columna)
+
+    if not columnas_con_outliers:
+        print("No se detectaron outliers en ninguna columna numérica.")
+        return
 
 
 # ============================================================================
 # 2. BIVARIANTE — dos variables
 # ============================================================================
 
-def bivariante_num_num(df, col_x, col_y):
+def scatterplot(df, col_x, col_y):
     """
     Relación entre dos variables numéricas.
     Dibuja un scatterplot y calcula la correlación de Pearson.
@@ -454,6 +503,7 @@ def bivariante_num_num(df, col_x, col_y):
     plt.title(f"{col_x} vs {col_y}")
     plt.xlabel(col_x)
     plt.ylabel(col_y)
+    plt.tight_layout()
     plt.show()
 
     r = df[col_x].corr(df[col_y])
@@ -462,7 +512,7 @@ def bivariante_num_num(df, col_x, col_y):
     return r
 
 # resultado = bivariante_cat_num_bar(df, col_cat, col_num):
-def bivariante_cat_num_bar(df, col_cat, col_num, estimator="mean", errorbar=None):
+def barplot(df, col_cat, col_num, estimator="mean", errorbar=None):
     """
     Estadístico (media, mediana, suma...) de una variable numérica
     según una variable categórica.
@@ -475,6 +525,7 @@ def bivariante_cat_num_bar(df, col_cat, col_num, estimator="mean", errorbar=None
     plt.xlabel(col_cat)
     plt.ylabel(f"{estimator} de {col_num}")
     plt.xticks(rotation=20)
+    plt.tight_layout()
     plt.show()
 
     valores = df.groupby(col_cat)[col_num].agg(estimator).round(2).sort_values(ascending=False)
@@ -484,7 +535,7 @@ def bivariante_cat_num_bar(df, col_cat, col_num, estimator="mean", errorbar=None
     return valores
 
 
-def bivariante_cat_num_box(df, col_cat, col_num):
+def boxplot_bivar(df, col_cat, col_num):
     """
     Distribución de una variable numérica según una variable categórica.
     Dibuja un boxplot (muestra mediana, dispersión y outliers).
@@ -494,6 +545,7 @@ def bivariante_cat_num_box(df, col_cat, col_num):
     plt.xlabel(col_cat)
     plt.ylabel(col_num)
     plt.xticks(rotation=20)
+    plt.tight_layout()
     plt.show()
 
     resumen = df.groupby(col_cat)[col_num].describe().round(2)
@@ -503,27 +555,35 @@ def bivariante_cat_num_box(df, col_cat, col_num):
     return resumen
 
 
-def bivariante_cat_cat_count(df, col_cat1, col_cat2):
+def countplot_hue(df, col_cat, hue):
     """
     Relación entre dos variables categóricas.
-    Dibuja un countplot de col_cat1 coloreado por col_cat2 (hue).
+    Dibuja un countplot de col_cat coloreado por hue.
     """
-    sns.countplot(data=df, x=col_cat1, hue=col_cat2)
-    plt.title(f"Conteo de {col_cat1} por {col_cat2}")
-    plt.xlabel(col_cat1)
+    sns.countplot(data=df, x=col_cat, hue=hue)
+    plt.title(f"Conteo de {col_cat} por {hue}")
+    plt.xlabel(col_cat)
     plt.ylabel("Conteo")
     plt.xticks(rotation=20)
-    plt.legend(title=col_cat2)
+    plt.legend(title=hue)
+    # Leyenda fuera del gráfico
+    plt.legend(
+        title=hue,
+        bbox_to_anchor=(1.02, 1),
+        loc="upper left"
+    )
+    
+    plt.tight_layout()
     plt.show()
 
-    tabla = pd.crosstab(df[col_cat1], df[col_cat2])
-    print(f"Tabla de conteos: {col_cat1} vs {col_cat2}")
+    tabla = pd.crosstab(df[col_cat], df[hue])
+    print(f"Tabla de conteos: {col_cat} vs {hue}")
     print(tabla)
 
     return tabla
 
 
-def bivariante_temporal(df, col_fecha, col_num, freq="ME", agg="sum"):
+def lineplot(df, col_fecha, col_num, marker='o', freq="ME", agg="sum"):
     """
     Evolución de una métrica numérica a lo largo del tiempo.
 
@@ -536,11 +596,22 @@ def bivariante_temporal(df, col_fecha, col_num, freq="ME", agg="sum"):
 
     serie = datos[col_num].resample(freq).agg(agg)
 
-    serie.plot()
+    # Convertimos la serie en DataFrame para usar seaborn
+    datos_plot = serie.reset_index()
+
+    plt.figure(figsize=(10, 5))
+
+    sns.lineplot(
+        data=datos_plot,
+        x=col_fecha,
+        y=col_num
+    )
+
     plt.title(f"Evolución de {col_num} ({agg}, freq={freq})")
     plt.xlabel("Fecha")
     plt.ylabel(col_num)
     plt.xticks(rotation=30)
+    plt.tight_layout()
     plt.show()
 
     print(f"Media: {serie.mean():.2f}   Std: {serie.std():.2f}")
