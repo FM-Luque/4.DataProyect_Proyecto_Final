@@ -46,42 +46,10 @@ pd.set_option('display.expand_frame_repr', False)
 # 0. PRE-EDA
 # ============================================================================
 
-# EXPLORACION BASICA
-def exploracion(df, n=3):
+# ============================================================================
+# 1. EDA PRELIMINAR 
+# ============================================================================
 
-    print('PRIMERAS COLUMNAS')
-    display(df.sample(n).T)
-    print(":" * 100)
-    print('INFORMACIÓN BÁSICA')
-    display(df.info())
-    print(":" * 100)
-    print('ESTADISTICOS')
-    display(df.describe(include="all").T)
-    print(":" * 100)
-    print('TAMAÑO DATAFRAME')
-    print(df.shape)
-    print(":" * 100)
-    print('NULOS')
-    display(df.isnull().sum()[df.isnull().sum() > 0].sort_values(ascending=False))
-    print(":" * 100)
-    print('PORCENTAJE DE NULOS')
-    display((df.isna().mean()[df.isna().mean() > 0] * 100).sort_values(ascending=False).round(2))
-    print(":" * 100)
-    print('DUPLICADOS')
-    print(df.duplicated().sum())
-
-
-# COMPROBAR CLAVES
-def comprobar_claves(df, valores_claves):
-
-    for clave in valores_claves:
-        print('Valores claves:')
-        print(f'{clave}: {df[clave].duplicated().sum()} duplicados')
-        print(f'{clave}: {df[clave].nunique()} unicos')
-        print('=' * 100)
-
-
-# EDA PRELIMINAR
 def eda(df, cols_excluir=None):
     """
     Funcion que proporciona un EDA rapido.
@@ -338,8 +306,161 @@ def eda(df, cols_excluir=None):
         plt.tight_layout()
         plt.show()
 
-
+# --------------------------------------------------
 # MATRIZ_CORRELACION
+# --------------------------------------------------
+
+def exploracion(df, n=3):
+
+    print('PRIMERAS COLUMNAS')
+    display(df.sample(n).T)
+    print(":" * 100)
+    print('INFORMACIÓN BÁSICA')
+    display(df.info())
+    print(":" * 100)
+    print('ESTADISTICOS')
+    display(df.describe(include="all").T)
+    print(":" * 100)
+    print('TAMAÑO DATAFRAME')
+    print(df.shape)
+    print(":" * 100)
+    print('NULOS')
+    display(df.isnull().sum()[df.isnull().sum() > 0].sort_values(ascending=False))
+    print(":" * 100)
+    print('PORCENTAJE DE NULOS')
+    display((df.isna().mean()[df.isna().mean() > 0] * 100).sort_values(ascending=False).round(2))
+    print(":" * 100)
+    print('DUPLICADOS')
+    print(df.duplicated().sum())
+
+
+# COMPROBAR CLAVES
+def comprobar_claves(df, valores_claves):
+
+    for clave in valores_claves:
+        print('Valores claves:')
+        print(f'{clave}: {df[clave].duplicated().sum()} duplicados')
+        print(f'{clave}: {df[clave].nunique()} unicos')
+        print('=' * 100)
+
+
+# ============================================================================
+#                ANALISIS ESPECIFICOS CON VISUALIZACIONES
+# ============================================================================
+
+# ============================================================================
+# 1. UNIVARIANTE — una variable
+# ============================================================================
+
+    # --------------------------------------------------
+    # COUNTPLOT
+    # --------------------------------------------------
+
+def countplot(df, col):
+    """
+    Distribución de una variable categórica.
+    Dibuja un countplot ordenado por frecuencia.
+    """
+    order = df[col].value_counts().index
+
+    sns.countplot(data=df, x=col, order=order)
+    plt.title(f"Distribución de {col}")
+    plt.xlabel(col)
+    plt.ylabel("Frecuencia")
+    plt.xticks(rotation=30)
+
+    plt.tight_layout()
+    plt.show()
+
+    print(df[col].value_counts())
+    print("."*40)
+    print("PORCENTAJES")
+    print(df[col].value_counts(normalize=True).mul(100).round(2))
+
+    # --------------------------------------------------
+    # HISTPLOT
+    # --------------------------------------------------
+
+def histplot(df, col, bins=30):
+    """
+    Distribución de una variable numérica.
+    Dibuja un histograma.
+    """
+    sns.histplot(data=df, x=col, bins=bins)
+    plt.title(f"Distribución de {col}")
+    plt.xlabel(col)
+    plt.ylabel("Frecuencia")
+
+    plt.tight_layout()
+    plt.show()
+
+    print(df[col].describe().round(2))
+    print("."*40)
+
+
+    # --------------------------------------------------
+    # BOXPLOT
+    # --------------------------------------------------
+
+def boxplot(df, col, bins=30):
+    """
+    Distribución de una variable numérica.
+    Dibuja un boxplot.
+    """
+    sns.boxplot(data=df, x=col)
+    plt.title(f"Boxplot de {col}")
+    plt.xlabel(col)
+
+    plt.tight_layout()
+    plt.show()
+
+    print(df[col].describe().round(2))
+
+    # --------------------------------------------------
+    # DETECTAR_OUTLIERS
+    # --------------------------------------------------
+
+def detectar_outliers(df): #OJO ESTARA EN SP LIMPIEZA
+    # 1. Detectar qué columnas numéricas tienen outliers, mostrando el detalle
+    columnas_con_outliers = []
+
+    for columna in df.select_dtypes(include='number').columns:
+        Q1 = df[columna].quantile(0.25)
+        Q3 = df[columna].quantile(0.75)
+        IQR = Q3 - Q1
+
+        limite_inferior = Q1 - 1.5 * IQR
+        limite_superior = Q3 + 1.5 * IQR
+
+        outliers = df[
+            (df[columna] < limite_inferior) |
+            (df[columna] > limite_superior)
+        ]
+        n_outliers = len(outliers)
+
+        if n_outliers > 0:
+            print(f"Columna: {columna}")
+            print(f"Q1: {Q1:.3f}")
+            print(f"Q3: {Q3:.3f}")
+            print(f"IQR: {IQR:.3f}")
+            print(f"Límite inferior: {limite_inferior:.3f}")
+            print(f"Límite superior: {limite_superior:.3f}")
+            print(f"Outliers encontrados: {n_outliers}")
+            print(f"El porcentaje de Outliers en {columna} es: {n_outliers/df.shape[0]*100:.3f} %")
+            print(f"\nDescribe de los outliers en {columna}:")
+            print(outliers[columna].describe().round(3))
+            print("-" * 50)
+            columnas_con_outliers.append(columna)
+
+    if not columnas_con_outliers:
+        print("No se detectaron outliers en ninguna columna numérica.")
+        return
+
+
+# --------------------------------------------------
+# MATRIZ_CORRELACION
+# --------------------------------------------------
+
 def matriz_correlacion(df, lista_cols_num=None, cols_excluir=None, top_n=10):
     """Calcula y representa la matriz de correlación
     y muestra los pares de variables más correlacionados."""
@@ -398,101 +519,12 @@ def matriz_correlacion(df, lista_cols_num=None, cols_excluir=None, top_n=10):
 
 
 # ============================================================================
-#                ANALISIS ESPECIFICOS CON VISUALIZACIONES
-# ============================================================================
-
-# ============================================================================
-# 1. UNIVARIANTE — una variable
-# ============================================================================
-
-def countplot(df, col):
-    """
-    Distribución de una variable categórica.
-    Dibuja un countplot ordenado por frecuencia.
-    """
-    order = df[col].value_counts().index
-
-    sns.countplot(data=df, x=col, order=order)
-    plt.title(f"Distribución de {col}")
-    plt.xlabel(col)
-    plt.ylabel("Frecuencia")
-    plt.xticks(rotation=30)
-
-    plt.tight_layout()
-    plt.show()
-
-    print(df[col].value_counts())
-
-
-def histplot(df, col, bins=30):
-    """
-    Distribución de una variable numérica.
-    Dibuja un histograma.
-    """
-    sns.histplot(data=df, x=col, bins=bins)
-    plt.title(f"Distribución de {col}")
-    plt.xlabel(col)
-    plt.ylabel("Frecuencia")
-
-    plt.tight_layout()
-    plt.show()
-
-    print(df[col].describe().round(2))
-
-def boxplot(df, col, bins=30):
-    """
-    Distribución de una variable numérica.
-    Dibuja un boxplot.
-    """
-    sns.boxplot(data=df, x=col)
-    plt.title(f"Boxplot de {col}")
-    plt.xlabel(col)
-
-    plt.tight_layout()
-    plt.show()
-
-    print(df[col].describe().round(2))
-
-def detectar_outliers(df): #OJO ESTARA EN SP LIMPIEZA
-    # 1. Detectar qué columnas numéricas tienen outliers, mostrando el detalle
-    columnas_con_outliers = []
-
-    for columna in df.select_dtypes(include='number').columns:
-        Q1 = df[columna].quantile(0.25)
-        Q3 = df[columna].quantile(0.75)
-        IQR = Q3 - Q1
-
-        limite_inferior = Q1 - 1.5 * IQR
-        limite_superior = Q3 + 1.5 * IQR
-
-        outliers = df[
-            (df[columna] < limite_inferior) |
-            (df[columna] > limite_superior)
-        ]
-        n_outliers = len(outliers)
-
-        if n_outliers > 0:
-            print(f"Columna: {columna}")
-            print(f"Q1: {Q1:.3f}")
-            print(f"Q3: {Q3:.3f}")
-            print(f"IQR: {IQR:.3f}")
-            print(f"Límite inferior: {limite_inferior:.3f}")
-            print(f"Límite superior: {limite_superior:.3f}")
-            print(f"Outliers encontrados: {n_outliers}")
-            print(f"El porcentaje de Outliers en {columna} es: {n_outliers/df.shape[0]*100:.3f} %")
-            print(f"\nDescribe de los outliers en {columna}:")
-            print(outliers[columna].describe().round(3))
-            print("-" * 50)
-            columnas_con_outliers.append(columna)
-
-    if not columnas_con_outliers:
-        print("No se detectaron outliers en ninguna columna numérica.")
-        return
-
-
-# ============================================================================
 # 2. BIVARIANTE — dos variables
 # ============================================================================
+
+    # --------------------------------------------------
+    # SCATTERPLOTS
+    # --------------------------------------------------
 
 def scatterplot(df, col_x, col_y):
     """
@@ -511,7 +543,10 @@ def scatterplot(df, col_x, col_y):
 
     return r
 
-# resultado = bivariante_cat_num_bar(df, col_cat, col_num):
+    # --------------------------------------------------
+    # BARPLOTS
+    # --------------------------------------------------
+
 def barplot(df, col_cat, col_num, estimator="mean", errorbar=None):
     """
     Estadístico (media, mediana, suma...) de una variable numérica
@@ -534,6 +569,9 @@ def barplot(df, col_cat, col_num, estimator="mean", errorbar=None):
 
     return valores
 
+    # --------------------------------------------------
+    # BOXPLOT - VIBARIABLES
+    # --------------------------------------------------
 
 def boxplot_bivar(df, col_cat, col_num):
     """
@@ -541,7 +579,7 @@ def boxplot_bivar(df, col_cat, col_num):
     Dibuja un boxplot (muestra mediana, dispersión y outliers).
     """
     sns.boxplot(data=df, x=col_cat, y=col_num)
-    plt.title(f"Distribución de {col_num} por {col_cat}")
+    plt.title(f"Boxplot de {col_num} vs {col_cat}")
     plt.xlabel(col_cat)
     plt.ylabel(col_num)
     plt.xticks(rotation=20)
@@ -554,6 +592,9 @@ def boxplot_bivar(df, col_cat, col_num):
 
     return resumen
 
+    # --------------------------------------------------
+    # COUNTPLOT - HUE
+    # --------------------------------------------------
 
 def countplot_hue(df, col_cat, hue):
     """
@@ -581,6 +622,10 @@ def countplot_hue(df, col_cat, hue):
     print(tabla)
 
     return tabla
+
+    # --------------------------------------------------
+    # LINEPLOT
+    # --------------------------------------------------
 
 
 def lineplot(df, col_fecha, col_num, marker='o', freq="ME", agg="sum"):
@@ -617,5 +662,64 @@ def lineplot(df, col_fecha, col_num, marker='o', freq="ME", agg="sum"):
     print(f"Media: {serie.mean():.2f}   Std: {serie.std():.2f}")
     print(f"Mínimo: {serie.idxmin()} -> {serie.min():.2f}")
     print(f"Máximo: {serie.idxmax()} -> {serie.max():.2f}")
+
+    return serie
+
+    # --------------------------------------------------
+    # BARPLOTS - SERIES
+    # --------------------------------------------------
+
+def barplot_serie(serie, titulo, kind="bar", color=None, xlabel=None, ylabel=None):
+    """ Representa una Serie ya agregada (resultado de un groupby, value_counts,
+    o cualquier cálculo previo), sin necesidad de volver a agregar datos.
+
+    Útil para los casos en los que ya tienes el resultado calculado
+    (ej. ventas por mes, tasa de devolución por canal) y solo
+    necesitas graficarlo.
+
+    Parameters
+    ----------
+    serie : pd.Series
+        Serie ya agregada (el índice será el eje x, o el eje y si kind="barh").
+
+    titulo : str
+        Título del gráfico.
+
+    kind : str
+        Tipo de gráfico: "bar", "barh" o "line". Por defecto "bar".
+
+    color : str
+        Color de las barras/línea (opcional).
+
+    xlabel : str
+        Etiqueta del eje x (opcional, si no se indica usa el nombre del índice).
+
+    ylabel : str
+        Etiqueta del eje y (opcional, si no se indica usa el nombre de la serie)."""
+
+    plt.figure(figsize=(8, 4))
+
+    if kind == "bar":
+        serie.plot(kind="bar", color=color)
+        plt.xticks(rotation=30)
+
+    elif kind == "barh":
+        serie.plot(kind="barh", color=color)
+
+    elif kind == "line":
+        serie.plot(kind="line", marker="o", color=color)
+        plt.xticks(rotation=30)
+
+    else:
+        raise ValueError('kind debe ser "bar", "barh" o "line"')
+
+    plt.title(titulo)
+    plt.xlabel(xlabel if xlabel else (serie.index.name or ""))
+    plt.ylabel(ylabel if ylabel else (serie.name or ""))
+
+    plt.tight_layout()
+    plt.show()
+
+    print(serie.round(2))
 
     return serie
