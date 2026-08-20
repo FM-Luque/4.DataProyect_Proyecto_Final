@@ -55,14 +55,20 @@ def exploracion_df_abtest(df, col_control):
 # 1. FLUJO DE COMPARACIÓN DE GRUPOS
 # ============================================================================
 
-def normalidad(df, lista_metricas):
+def normalidad(df, lista_metricas, n_max=5000, random_state=42):
     """Paso 1 del diagrama. Shapiro-Wilk sobre cada métrica.
-    Si tu columna tiene más de ~5000 filas, pásale una muestra
-    (df[metrica].sample(500, random_state=42)) para no perder potencia."""
+    Si la columna tiene más de n_max filas, se testea sobre una muestra
+    aleatoria de tamaño n_max para evitar el warning de scipy y mantener
+    la fiabilidad del test (Shapiro pierde precisión con N > 5000)."""
 
     for metrica in lista_metricas:
 
-        statistic, pvalue = stats.shapiro(df[metrica])
+        datos = df[metrica]
+
+        if len(datos) > n_max:
+            datos = datos.sample(n_max, random_state=random_state)
+
+        statistic, pvalue = stats.shapiro(datos)
 
         if pvalue > 0.05:
             print(
@@ -74,8 +80,7 @@ def normalidad(df, lista_metricas):
                 f'Para la columna {metrica.upper()} '
                 f'los datos NO siguen una distribución normal'
             )
-
-
+            
 def homocedasticidad(df, col_control, lista_metricas):
     """Paso 2 del diagrama. Levene entre los grupos de col_control."""
 
@@ -112,6 +117,8 @@ def ttest_dos_grupos(df, col_control, lista_metricas):
 
         t_stat, pvalue = stats.ttest_ind(grupo_a, grupo_b, equal_var=False)
 
+        print(f't={t_stat:.4f}, p={pvalue:.4f}')
+
         if pvalue > 0.05:
             print(f'Para la métrica {metrica.upper()}, las medias SI son iguales, es decir, NO hay diferencias significativas entre grupos')
         else:
@@ -130,6 +137,8 @@ def mannwhitneyu(df, col_control, lista_metricas):
 
         statistic, pvalue = stats.mannwhitneyu(control, test)
 
+        print(f'U={statistic:.4f}, p={pvalue:.4f}')
+
         if pvalue > 0.05:
             print(f'Para la métrica {metrica.upper()}, las medianas SI son iguales, es decir, NO hay deferencias significativas entre grupos')
         else:
@@ -145,6 +154,8 @@ def anova_tukey(df, col_control, lista_metricas, alpha=0.05):
         grupos = [g[metrica].values for _, g in df.groupby(col_control)]
 
         f_stat, pvalue = stats.f_oneway(*grupos)
+
+        print(f'F={f_stat:.4f}, p={pvalue:.4f}')
 
         if pvalue > 0.05:
             print(f'Para la métrica {metrica.upper()}, las medias SI son iguales entre los grupos de {col_control} (ANOVA no significativo)')
@@ -168,13 +179,15 @@ def kruskal(df, col_control, lista_metricas):
 
         statistic, pvalue = stats.kruskal(*grupos)
 
+        print(f'H={statistic:.4f}, p={pvalue:.4f}')
+
         if pvalue > 0.05:
             print(f'Para la métrica {metrica.upper()}, las medianas SI son iguales entre los grupos de {col_control} (Kruskal-Wallis no significativo)')
         else:
             print(f'Para la métrica {metrica.upper()}, al menos un grupo de {col_control} tiene una mediana distinta (Kruskal-Wallis significativo)')
 
 
-def decidir_test(df, col_control, lista_metricas, alpha=0.05):
+def decidir_test(df, col_control, lista_metricas, n_max=5000, random_state=42, alpha=0.05):
     """Orquestador: recorre el diagrama completo (normalidad -> homocedasticidad
     -> nº de grupos) y llama automáticamente al test que corresponda para
     cada métrica. Útil para no tener que decidir a mano cada vez."""
@@ -183,12 +196,16 @@ def decidir_test(df, col_control, lista_metricas, alpha=0.05):
 
     for metrica in lista_metricas:
 
-        es_normal = stats.shapiro(df[metrica])[1] > 0.05
+        datos_normalidad = df[metrica]
+        if len(datos_normalidad) > n_max:
+            datos_normalidad = datos_normalidad.sample(n_max, random_state=random_state)
+
+        es_normal = stats.shapiro(datos_normalidad)[1] > 0.05
 
         grupos_vals = [g[metrica].values for _, g in df.groupby(col_control)]
         es_homocedastico = stats.levene(*grupos_vals)[1] > 0.05
 
-        print(f'--- {metrica.upper()} | normal={es_normal} | homocedastico={es_homocedastico} | n_grupos={n_grupos} ---')
+        print(f'--- {metrica.upper()} | normalidad={es_normal} | homocedastico={es_homocedastico} | n_grupos={n_grupos} ---')
 
         if es_normal and es_homocedastico and n_grupos == 2:
             ttest_dos_grupos(df, col_control, [metrica])
@@ -242,127 +259,6 @@ def correlacion_regresion(df, col_x, col_y):
     print(modelo.summary())
     return modelo
 
-
-# ============================================================================
-# EJEMPLO DE USO — con tu proyecto (02_datos_limpios.csv)
-# ============================================================================
-
-if __name__ == '__main__':
-
-    df = pd.read_csv('02_datos_limpios.csv')
-
-    # Tabla a nivel cliente (una fila = un cliente)
-    clientes = df.groupby('id_cliente').agg(
-        gasto_total=('importe_total', 'sum'),
-        n_pedidos=('order_id', 'count'),
-        ingresos_anuales=('ingresos_anuales', 'first'),
-        segmento_cliente=('segmento_cliente', 'first'),
-        tiene_hijos=('tiene_hijos', 'first'),
-        nivel_educativo=('nivel_educativo', 'first'),
-        edad=('edad', 'first'),
-    ).reset_index()
-
-    print('#### FLUJO DE GRUPOS ####')
-
-    # Caso A: gasto_total ~ tiene_hijos (nivel cliente, 2 grupos)
-    normalidad(clientes, ['gasto_total'])
-    homocedasticidad(clientes, 'tiene_hijos', ['gasto_total'])
-    mannwhitneyu(clientes, 'tiene_hijos', ['gasto_total'])
-
-    # Caso C: importe_total ~ canal (nivel pedido, 4 grupos)
-    normalidad(df, ['importe_total'])
-    homocedasticidad(df, 'canal', ['importe_total'])
-    kruskal(df, 'canal', ['importe_total'])
-
-    # Orquestador: recorre el flujo completo solo
-    decidir_test(df, 'canal', ['importe_total'])
-    decidir_test(clientes, 'segmento_cliente', ['edad'])
-
-    print()
-    print('#### ANEXO — RELACIONES ####')
-
-    intervalo_confianza_media(df, ['importe_total'])
-    chi_cuadrado_independencia(df, 'segmento_cliente', 'devuelto')
-    chi_cuadrado_independencia(clientes, 'nivel_educativo', 'segmento_cliente')
-    correlacion_regresion(clientes, 'ingresos_anuales', 'gasto_total')
-
-
-
-import pandas as pd
-import scipy.stats as stats
-
-
-def exploracion_df_abtest2(df, col_control):
-
-    for categoria in df[col_control].unique():
-        df_filtrado = df[df[col_control] == categoria]
-
-        print(
-            f'Los principales estadísticos de las columnas '
-            f'categóricas para el grupo {categoria.upper()} son'
-        )
-        display(df_filtrado.describe(include='str').T)
-
-        print(
-            f'Los principales estadísticos de las columnas '
-            f'numéricas para el grupo {categoria.upper()} son'
-        )
-        display(df_filtrado.describe(include='number').T)
-
-        print('=' * 100)
-
-
-def normalidad2(df, lista_metricas):
-
-    for metrica in lista_metricas:
-
-        statistic, pvalue = stats.shapiro(df[metrica])
-
-        if pvalue > 0.05:
-            print(
-                f'Para la columna {metrica.upper()} '
-                f'los datos SÍ siguen una distribución normal'
-            )
-        else:
-            print(
-                f'Para la columna {metrica.upper()} '
-                f'los datos NO siguen una distribución normal'
-            )
-
-def homocedasticidad2(df,col_control,lista_metricas):
-    for metrica in lista_metricas:
-        df_grupos=[]
-
-        for valor in df[col_control].unique():
-            df_grupos.append(df[df[col_control] == valor][metrica])
-
-        statistic,pvalue = stats.levene(*df_grupos)
-
-        if pvalue > 0.05:
-                print(
-                        f'Para la columna {metrica.upper()} las varianzas SÍ son homgéneas entre grupos, SI hay HOMOCEDASTICIDAD'
-                    )
-        else:
-                    print(
-                        f'Para la columna {metrica.upper()} las varianzas NO son homgéneas entre grupos, NO hay HOMOCEDASTICIDAD'
-                    ) 
-
-def mannwhitneyu2 (df, col_control, lista_metricas):
-
-    for metrica in lista_metricas:
-
-        valores_control = df[col_control].unique()
-
-        control  = df[df[col_control] == valores_control[0]][metrica]
-        test  = df[df[col_control] == valores_control[1]][metrica]
-
-        statistic, pvalue = stats.mannwhitneyu(control,test)
-
-        if pvalue > 0.05:
-            print(f'Para la métrica {metrica.upper()}, las medianas SI son iguales, es decir, NO hay deferencias significativas entre grupos')
-
-        else:
-            print(f'Para la métrica {metrica.upper()}, las medianas NO son iguales, es decir, SI hay deferencias significativas entre grupos')
 
 
 

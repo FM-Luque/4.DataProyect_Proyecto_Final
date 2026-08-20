@@ -307,41 +307,39 @@ def eda(df, cols_excluir=None):
         plt.show()
 
 # --------------------------------------------------
-# MATRIZ_CORRELACION
+# EXPLORACION DEL DATA FRAME
 # --------------------------------------------------
 
-def exploracion(df, n=3):
+def exploracion(df,cols_excluir=None, n=3):
+
+ # Si no indicamos columnas a excluir,
+    # creamos una lista vacia
+    if cols_excluir is None:
+        cols_excluir = []
+
+    # Creamos un DataFrame sin las columnas excluidas
+    df_exp = df.drop(columns=cols_excluir, errors="ignore")
 
     print('PRIMERAS COLUMNAS')
-    display(df.sample(n).T)
+    display(df_exp.sample(n).T)
     print(":" * 100)
     print('INFORMACIÓN BÁSICA')
-    display(df.info())
+    display(df_exp.info())
     print(":" * 100)
     print('ESTADISTICOS')
-    display(df.describe(include="all").T)
+    display(df_exp.describe(include="all").T)
     print(":" * 100)
     print('TAMAÑO DATAFRAME')
-    print(df.shape)
+    print(df_exp.shape)
     print(":" * 100)
     print('NULOS')
-    display(df.isnull().sum()[df.isnull().sum() > 0].sort_values(ascending=False))
+    display(df_exp.isnull().sum()[df.isnull().sum() > 0].sort_values(ascending=False))
     print(":" * 100)
     print('PORCENTAJE DE NULOS')
-    display((df.isna().mean()[df.isna().mean() > 0] * 100).sort_values(ascending=False).round(2))
+    display((df_exp.isna().mean()[df.isna().mean() > 0] * 100).sort_values(ascending=False).round(2))
     print(":" * 100)
     print('DUPLICADOS')
-    print(df.duplicated().sum())
-
-
-# COMPROBAR CLAVES
-def comprobar_claves(df, valores_claves):
-
-    for clave in valores_claves:
-        print('Valores claves:')
-        print(f'{clave}: {df[clave].duplicated().sum()} duplicados')
-        print(f'{clave}: {df[clave].nunique()} unicos')
-        print('=' * 100)
+    print(df_exp.duplicated().sum())
 
 
 # ============================================================================
@@ -417,7 +415,7 @@ def boxplot(df, col, bins=30):
     print(df[col].describe().round(2))
 
     # --------------------------------------------------
-    # DETECTAR_OUTLIERS
+    # DETECTAR_OUTLIERS DATAFRAME
     # --------------------------------------------------
 
 def detectar_outliers(df): #OJO ESTARA EN SP LIMPIEZA
@@ -456,6 +454,25 @@ def detectar_outliers(df): #OJO ESTARA EN SP LIMPIEZA
         print("No se detectaron outliers en ninguna columna numérica.")
         return
 
+    # --------------------------------------------------
+    # DETECTAR_OUTLIERS COLUMNA
+    # --------------------------------------------------
+
+def detectar_outlier_col(columna):
+    Q1 = columna.quantile(0.25)
+    Q3 = columna.quantile(0.75)
+    IQR = Q3 - Q1
+
+    limite_inferior = Q1 - 1.5 * IQR
+    limite_superior = Q3 + 1.5 * IQR
+
+    print(f"Valores outiers")
+    print(f"Q1: {Q1:.3f}")
+    print(f"Q3: {Q3:.3f}")
+    print(f"IQR: {IQR:.3f}")
+    print(f"Límite inferior: {limite_inferior:.3f}")
+    print(f"Límite superior: {limite_superior:.3f}")
+ 
 
 # --------------------------------------------------
 # MATRIZ_CORRELACION
