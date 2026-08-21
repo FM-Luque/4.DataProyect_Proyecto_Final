@@ -58,6 +58,10 @@ cover/
 *.mo
 *.pot
 
+# Power BI
+~$*.pbix
+*.pbix.bak
+
 # Django stuff:
 *.log
 local_settings.py
