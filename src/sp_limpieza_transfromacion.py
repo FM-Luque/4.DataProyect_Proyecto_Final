@@ -1,27 +1,9 @@
-import pandas as pd 
-
-def minus(df):
-    """ Funcion que convierte
-    todas las variables a minusculas
-    """
-    for col in df.select_dtypes(include=['string','object']).columns:
-        df[col]=df[col].str.lower()
-
-def espacios(df):
-    """ Funcion que reemplaza 
-    todas las variables categoricas espacio
-    por guión bajo
-    """
-    for col in df.select_dtypes(include=['string','object']).columns:
-        df[col]=df[col].str.replace(' ','_')
-
-def comas (df):
-    """Funcion que reemplaza comas por puntos e
-    intenta convertir a float
-    """
-    for col in df.select_dtypes(include=['string','object']).columns:
-        df[col]=df[col].str.replace(',','.')
-        try:
-            df[col]=df[col].astype('float64')
-        except:
-            pass
+"""
+sp_limpieza_trasfromacion.py
+================
+Este módulo se planteó inicialmente para las funciones de limpieza de
+Fase 2, pero se decidió mantenerlas dentro del notebook (02_limpieza_
+transformacion.ipynb), ya que son pasos específicos de un proceso lineal,
+no funciones reutilizables entre distintos análisis (a diferencia de
+sp_eda.py o sp_abtest.py).
+"""
