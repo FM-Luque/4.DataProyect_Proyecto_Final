@@ -1,9 +1,12 @@
 """
-sp_abtest_v2.py
+sp_abtest.py
 ================
 Caja de herramientas de Fase 4 — Análisis Inferencial.
 
-Dos bloques:
+Tres bloques:
+
+  0) EXPLORACIÓN INICIAL:
+     clasificar_columnas() / exploracion_df_abtest()
 
   1) FLUJO DE COMPARACIÓN DE GRUPOS (sigue el diagrama ampliado):
      normalidad -> homocedasticidad -> nº de grupos -> test
@@ -28,6 +31,88 @@ from statsmodels.stats.multicomp import pairwise_tukeyhsd
 # ============================================================================
 # 0. EXPLORACIÓN INICIAL
 # ============================================================================
+
+    # ============================================================================
+    # 1. CLASIFICAR COLUMNAS CONTROL - METRICAS 
+    # ============================================================================
+
+def clasificar_columnas(df, max_categorias_control=15, min_unicos_metrica=15):
+    """
+    Analiza cada columna del DataFrame y sugiere si es candidata a
+    'col_control' (variable de agrupación categórica) o a 'metrica'
+    (variable numérica a medir), útil como paso previo a normalidad(),
+    homocedasticidad() y los tests de sp_abtest.py.
+
+    Parameters
+    ----------
+    df : DataFrame
+    max_categorias_control : int
+        Nº máximo de valores únicos para considerar una columna categórica
+        como candidata razonable a col_control (por defecto 15).
+    min_unicos_metrica : int
+        Nº mínimo de valores únicos para considerar una columna numérica
+        como candidata CLARA a metrica sin revisar (por defecto 15).
+        Por debajo de este umbral, se marca "revisar" en vez de descartar,
+        porque puede ser una escala válida (ej. calificacion 1-5).
+
+    Returns
+    -------
+    DataFrame con columnas: columna, dtype, n_unicos, sugerencia, motivo
+    """
+    pd.set_option('display.max_colwidth', None)
+    filas = []
+
+    for col in df.columns:
+        dtype = df[col].dtype
+        n_unicos = df[col].nunique()
+        es_numerica = pd.api.types.is_numeric_dtype(dtype)
+        es_fecha = pd.api.types.is_datetime64_any_dtype(dtype)
+
+        if es_fecha:
+            sugerencia = "descartada"
+            motivo = "Es fecha; usar columnas derivadas (año, mes) como col_control si aplica"
+
+        elif es_numerica:
+            if n_unicos >= min_unicos_metrica:
+                sugerencia = "metrica"
+                motivo = f"Numérica con {n_unicos} valores únicos: variable continua medible"
+            elif n_unicos <= 1:
+                sugerencia = "descartada"
+                motivo = "Solo 1 valor único: no aporta información"
+            else:
+                sugerencia = "revisar"
+                motivo = f"Numérica con solo {n_unicos} valores únicos: puede ser escala válida (ej. calificación 1-5) o código mal tipado — revisar a mano"
+
+        else:
+            if 2 <= n_unicos <= max_categorias_control:
+                sugerencia = "col_control"
+                motivo = f"Categórica con {n_unicos} valores únicos: rango razonable para agrupar"
+            elif n_unicos == 1:
+                sugerencia = "descartada"
+                motivo = "Solo 1 valor único: no permite comparar grupos"
+            else:
+                sugerencia = "descartada"
+                motivo = f"Categórica con {n_unicos} valores únicos: demasiados para agrupar de forma útil (ej. ID, nombre)"
+
+        filas.append({
+            "columna": col,
+            "dtype": str(dtype),
+            "n_unicos": n_unicos,
+            "sugerencia": sugerencia,
+            "motivo": motivo
+        })
+
+    resultado = pd.DataFrame(filas)
+    orden = {"col_control": 0, "metrica": 1, "revisar": 2, "descartada": 3}
+    resultado["orden_tmp"] = resultado["sugerencia"].map(orden)
+    resultado = resultado.sort_values(["orden_tmp", "n_unicos"]).drop(columns="orden_tmp").reset_index(drop=True)
+
+    return resultado
+
+
+    # ============================================================================
+    # 2. EXPLORACIÓN ABTEST
+    # ============================================================================
 
 def exploracion_df_abtest(df, col_control):
     """Describe por separado las columnas categóricas y numéricas para cada
