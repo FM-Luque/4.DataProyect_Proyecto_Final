@@ -8,19 +8,19 @@ Solo contenido descriptivo (nada de tests de hipótesis / p-valores:
 eso vive en sp_abtest_completo.py, Fase 4).
 
   exploracion()               -> vista rápida: sample, info, describe, nulos, duplicados
-  comprobar_claves()          -> duplicados y valores únicos de columnas clave
   eda()                       -> EDA rápido automático (tipos, estadísticas, countplots,
                                   histogramas y boxplots de TODAS las columnas a la vez)
   matriz_correlacion()        -> heatmap de correlaciones + tabla de pares más correlacionados
 
-  univariante_categorico()    -> countplot de UNA columna categórica
-  univariante_numerico()      -> histplot + boxplot de UNA columna numérica
+  countplot()                 -> countplot de UNA columna categórica
+  histplot()                  -> histplot de UNA columna numérica
+  boxplot()                   -> boxplot de UNA columna numérica
 
-  bivariante_num_num()        -> scatterplot + correlación entre dos numéricas
-  bivariante_cat_num_bar()    -> barplot de medias (categórica vs numérica)
-  bivariante_cat_num_box()    -> boxplot (categórica vs numérica)
-  bivariante_cat_cat_count()  -> countplot con hue (categórica vs categórica)
-  bivariante_temporal()       -> lineplot de una métrica resampleada en el tiempo
+  scatterplot()               -> scatterplot + correlación entre dos numéricas
+  barplotr()                  -> barplot de medias (categórica vs numérica)
+  boxplot_bivar()             -> boxplot (categórica vs numérica)
+  countplot_hue()             -> countplot con hue (categórica vs categórica)
+  lineplot()       -> lineplot de una métrica resampleada en el tiempo
 
 Todas asumen que le pasas el DataFrame ya al nivel correcto
 (df = nivel pedido / order_id, clientes = nivel cliente / id_cliente).

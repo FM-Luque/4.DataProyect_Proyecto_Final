@@ -1,9 +1,8 @@
 # 4.DataProyect_Proyecto_Final
 
+# Análisis de Ventas E-commerce: Exploración, Contraste Estadístico y Dashboard
 
-# 📊 Análisis de Ventas E-commerce: Exploración, Contraste Estadístico y Dashboard
-
-## 📖 Descripción
+## Descripción
 
 Este proyecto realiza un análisis exploratorio y estadístico de los pedidos,
 clientes y productos de un comercio electrónico entre 2022 y 2025. El
@@ -16,7 +15,7 @@ descriptivo (EDA), contraste de hipótesis (tests estadísticos: t-test,
 Mann-Whitney, ANOVA+Tukey, Kruskal-Wallis, Chi-cuadrado, correlación/
 regresión) y visualización interactiva en Power BI.
 
-## 🗂️ Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 ├── data/
@@ -30,7 +29,7 @@ regresión) y visualización interactiva en Power BI.
 │       ├── clientes.csv              # Tabla agregada a nivel cliente
 │       └── productos.csv             # Tabla agregada a nivel producto
 ├── notebooks/
-│   ├── 00_eda_borrador.ipynb              # Exploración preliminar (no es entregable)
+│   ├── 00_exploracion_consultas.ipynb     # Exploración preliminar (no es entregable)
 │   ├── 01_carga_integración.ipynb         # Fase 1: carga y unión de fuentes
 │   ├── 02_limpieza_transformacion.ipynb   # Fase 2: limpieza y transformación
 │   ├── 03_eda.ipynb                       # Fase 3: análisis exploratorio
@@ -43,8 +42,7 @@ regresión) y visualización interactiva en Power BI.
 ├── dashboard/
 │   └── proyecto_ecommerce.pbix       # Dashboard interactivo Power BI
 ├── informe/
-│   └── informe_final.md              # Informe explicativo del análisis
-├── docs/                             # Documentación de apoyo del proyecto
+│   └── Informe.md              # Informe explicativo del análisis
 ├── .gitignore
 └── README.md
 ```
@@ -55,7 +53,7 @@ regresión) y visualización interactiva en Power BI.
 > específicos de un proceso lineal, no funciones reutilizables entre
 > distintos análisis (a diferencia de `sp_eda.py` o `sp_abtest.py`).
 
-## 🛠️ Instalación y Requisitos
+## Instalación y Requisitos
 
 Este proyecto usa Python 3.11+ y requiere las siguientes librerías:
 
@@ -76,7 +74,7 @@ pip install pandas numpy matplotlib seaborn scipy statsmodels
 
 Para el dashboard: **Power BI Desktop** (gratuito, disponible para Windows).
 
-## 📊 Resultados y Conclusiones
+## Resultados y Conclusiones
 
 **Fuentes de datos:** dos fuentes independientes — `clientes.csv` (datos
 demográficos y de comportamiento) y `ventas.xlsx` (catálogo de productos +
@@ -113,7 +111,7 @@ año, canal, categoría, marca, segmento y tramo de edad.
 
 Informe completo del análisis disponible en [`informe/informe_final.md`](informe/informe_final.md).
 
-## 🔄 Próximos Pasos
+## Próximos Pasos
 
 - Investigar el criterio real de asignación de `segmento_cliente`, dado que
   no refleja el comportamiento de gasto observado.
@@ -124,12 +122,12 @@ Informe completo del análisis disponible en [`informe/informe_final.md`](inform
 - Ampliar el dashboard con una página de análisis temporal detallado
   (estacionalidad mensual, comparativa año a año).
 
-## 🤝 Contribuciones
+## Contribuciones
 
 Proyecto individual desarrollado como Proyecto Final del programa. No se
 aceptan contribuciones externas por el momento.
 
-## ✒️ Autores
+## Autores
 
 - *Francisco Miguel Luque Gonzalez .*
 - *Enlace a GitHub: [github.com/FM-Luque/4.DataProyect_Proyecto_Final.git](https://github.com/FM-Luque/4.DataProyect_Proyecto_Final.git)*

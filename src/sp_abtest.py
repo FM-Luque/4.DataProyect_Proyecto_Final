@@ -23,6 +23,8 @@ Repasa la Guía de claves antes de decidir qué tabla usar.
 """
 
 import pandas as pd
+from IPython.display import display
+
 import scipy.stats as stats
 import statsmodels.formula.api as smf
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
